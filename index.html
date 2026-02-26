@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitcoin Team Content Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#333}
+header{background:#1a1a2e;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:14px}
+.btc-icon{width:40px;height:40px;background:#F7931A;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff}
+header h1{color:#fff;font-size:22px;font-weight:700}
+header h1 span{color:#F7931A}
+.header-right{display:flex;align-items:center;gap:16px}
+.req-count{background:#F7931A;color:#fff;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600}
+.btn-add{background:#F7931A;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-add:hover{background:#e8850f}
+.user-info{display:flex;align-items:center;gap:8px;color:#ccc;font-size:13px}
+.role-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase}
+.role-badge.editor{background:#F7931A;color:#fff}
+.role-badge.viewer{background:#374151;color:#9ca3af}
+.btn-logout{background:none;border:1px solid #555;color:#999;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+.btn-logout:hover{border-color:#F7931A;color:#F7931A}
+.btn-admin{background:none;border:1px solid #F7931A;color:#F7931A;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+.btn-admin:hover{background:#F7931A;color:#fff}
+.login-screen{position:fixed;inset:0;background:#1a1a2e;z-index:2000;display:flex;align-items:center;justify-content:center}
+.login-box{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.login-box .btc-icon{margin:0 auto 16px;width:56px;height:56px;font-size:30px}
+.login-box h2{font-size:22px;margin-bottom:4px}
+.login-box h2 span{color:#F7931A}
+.login-box p{color:#888;font-size:14px;margin-bottom:24px}
+.login-box input{width:100%;padding:12px 14px;border:1px solid #d0d0d0;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none}
+.login-box input:focus{border-color:#F7931A}
+.login-box .btn-login{width:100%;background:#F7931A;color:#fff;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+.login-box .btn-login:hover{background:#e8850f}
+.filters{background:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid #e0e0e0}
+.filters input,.filters select{padding:8px 12px;border:1px solid #d0d0d0;border-radius:6px;font-size:14px;outline:none}
+.filters input:focus,.filters select:focus{border-color:#F7931A}
+.filters input{width:260px}
+.filter-label{font-size:13px;color:#666;font-weight:500}
+.table-wrap{padding:24px 32px}
+.table-header{display:grid;grid-template-columns:40px 1.2fr 1fr 1fr 140px 50px;align-items:center;padding:10px 16px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.row-card{background:#fff;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden}
+.row-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.1)}
+.row-main{display:grid;grid-template-columns:40px 1.2fr 1fr 1fr 140px 50px;align-items:center;padding:14px 16px;cursor:pointer}
+.row-num{font-size:13px;color:#aaa;font-weight:600}
+.requester{font-weight:600;font-size:15px}
+.requester small{display:block;font-weight:400;color:#888;font-size:12px;margin-top:2px}
+.date-col{font-size:14px;color:#555}
+.type-tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;margin:1px 2px}
+.type-tag.qt{background:#dbeafe;color:#1d4ed8}
+.type-tag.ka{background:#ede9fe;color:#7c3aed}
+.type-tag.ep{background:#d1fae5;color:#047857}
+.submission-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.submission-badge.new-sub{background:#dbeafe;color:#1d4ed8}
+.submission-badge.change-sub{background:#fef3c7;color:#b45309}
+.status-select{padding:5px 8px;border-radius:20px;font-size:12px;font-weight:600;border:2px solid transparent;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;text-align:center;min-width:120px}
+.status-badge-readonly{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-align:center;display:inline-block;min-width:100px}
+.status-new{background:#dbeafe;color:#1d4ed8}
+.status-in-review{background:#fef3c7;color:#b45309}
+.status-in-progress{background:#ede9fe;color:#7c3aed}
+.status-completed{background:#d1fae5;color:#047857}
+.status-rejected{background:#fee2e2;color:#dc2626}
+.chevron{font-size:18px;color:#aaa;transition:transform .3s;user-select:none;text-align:center}
+.chevron.open{transform:rotate(180deg);color:#F7931A}
+.detail-panel{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .3s ease;background:#fafafa;border-top:1px solid #f0f0f0}
+.detail-panel.open{max-height:600px;padding:20px 24px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.detail-item label{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.detail-item p{font-size:14px;color:#333;line-height:1.5;white-space:pre-wrap}
+.detail-full{grid-column:1/-1}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{padding:20px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.modal-header h2{font-size:18px}
+.modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#999;padding:4px 8px}
+.modal-close:hover{color:#333}
+.modal-body{padding:24px}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:6px}
+.form-group label .req{color:#dc2626}
+.form-group .form-hint{font-size:12px;color:#888;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border:1px solid #d0d0d0;border-radius:8px;font-size:14px;font-family:inherit;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#F7931A}
+.form-group textarea{resize:vertical;min-height:100px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.checkbox-group{display:flex;flex-direction:column;gap:10px}
+.checkbox-group label,.radio-group label{display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;font-size:14px}
+.checkbox-group input[type="checkbox"],.radio-group input[type="radio"]{width:18px;height:18px;accent-color:#F7931A;cursor:pointer}
+.radio-group{display:flex;flex-direction:column;gap:10px}
+.form-error{color:#dc2626;font-size:12px;margin-top:4px;display:none}
+.modal-footer{padding:16px 24px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px}
+.btn-cancel{background:#e5e7eb;color:#333;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer}
+.btn-submit{background:#F7931A;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-submit:hover{background:#e8850f}
+.section-divider{border:none;border-top:1px solid #eee;margin:20px 0}
+.section-title{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.section-desc{font-size:13px;color:#888;margin-bottom:16px}
+.admin-editor-list{list-style:none;padding:0}
+.admin-editor-list li{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f9;border-radius:8px;margin-bottom:6px;font-size:14px}
+.admin-editor-list li .admin-tag{font-size:11px;color:#F7931A;font-weight:600;margin-left:8px}
+.btn-remove{background:#fee2e2;color:#dc2626;border:none;padding:4px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+.btn-remove:hover{background:#dc2626;color:#fff}
+.admin-add-row{display:flex;gap:8px;margin-top:12px}
+.admin-add-row input{flex:1;padding:8px 12px;border:1px solid #d0d0d0;border-radius:8px;font-size:14px;outline:none}
+.admin-add-row input:focus{border-color:#F7931A}
+.admin-add-row button{background:#F7931A;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.refresh-btn{position:fixed;bottom:28px;right:28px;width:56px;height:56px;border-radius:50%;background:#F7931A;color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(247,147,26,.4);display:flex;align-items:center;justify-content:center;transition:transform .3s,box-shadow .3s,background .2s;z-index:900}
+.refresh-btn:hover{background:#e8850f;box-shadow:0 6px 24px rgba(247,147,26,.5);transform:scale(1.08)}
+.refresh-btn.spinning .refresh-icon{animation:spin 1s ease}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.refresh-icon{display:inline-block;line-height:1}
+.refresh-toast{position:fixed;bottom:96px;right:20px;background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:900;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;pointer-events:none}
+.refresh-toast.show{opacity:1;transform:translateY(0)}
+.empty-state{text-align:center;padding:60px 20px;color:#999}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:16px}
+.loading-state{text-align:center;padding:60px 20px;color:#999}
+.loading-spinner{display:inline-block;width:36px;height:36px;border:4px solid #e0e0e0;border-top-color:#F7931A;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px}
+.hidden{display:none!important}
+@media(max-width:768px){.table-header{display:none}.row-main{grid-template-columns:1fr;gap:6px}.detail-grid{grid-template-columns:1fr}.filters{flex-direction:column}.filters input{width:100%}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="login-screen" id="loginScreen">
+<div class="login-box">
+<div class="btc-icon">&#8383;</div>
+<h2><span>Bitcoin</span> Content Tracker</h2>
+<p>Sign in to view and submit content change requests</p>
+<input type="text" id="loginName" placeholder="Your full name">
+<input type="email" id="loginEmail" placeholder="Your email address">
+<button class="btn-login" onclick="handleLogin()">Sign In</button>
+<div class="form-error" id="loginError" style="margin-top:12px">Please fill in both fields.</div>
+</div>
+</div>
+<header>
+<div class="header-left"><div class="btc-icon">&#8383;</div><h1><span>Bitcoin</span> Team Content Tracker</h1></div>
+<div class="header-right">
+<div class="req-count" id="reqCount">0 Requests</div>
+<button class="btn-add" onclick="openModal()">+ New Request</button>
+<div class="user-info">
+<span id="userName"></span>
+<span class="role-badge" id="roleBadge"></span>
+<button class="btn-admin hidden" id="adminBtn" onclick="openAdmin()">⚙ Manage Editors</button>
+<button class="btn-logout" onclick="handleLogout()">Sign Out</button>
+</div>
+</div>
+</header>
+<div class="filters">
+<input type="text" id="searchInput" placeholder="Search by name, email, or title..." oninput="renderRequests()">
+<div><label class="filter-label">Type:</label><select id="filterType" onchange="renderRequests()"><option value="all">All Types</option><option value="Quick Text">Quick Text</option><option value="Knowledge Article">Knowledge Article</option><option value="Educational Post">Educational Post</option></select></div>
+<div><label class="filter-label">Submission:</label><select id="filterSubmission" onchange="renderRequests()"><option value="all">All</option><option value="New Submission">New Submission</option><option value="Change to Existing Content">Change to Existing</option></select></div>
+<div><label class="filter-label">Status:</label><select id="filterStatus" onchange="renderRequests()"><option value="all">All</option><option value="New">New</option><option value="In Review">In Review</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option><option value="Rejected">Rejected</option></select></div>
+<div><label class="filter-label">Sort:</label><select id="sortBy" onchange="renderRequests()"><option value="date-desc">Newest First</option><option value="date-asc">Oldest First</option></select></div>
+</div>
+<div class="table-wrap">
+<div class="table-header"><div>#</div><div>Requester</div><div>Date</div><div>Submission Type</div><div>Status</div><div></div></div>
+<div id="requestList"><div class="loading-state"><div class="loading-spinner"></div><p>Loading submissions...</p></div></div>
+</div>
+<div class="modal-overlay" id="modalOverlay">
+<div class="modal">
+<div class="modal-header"><h2>📝 Content Change Request</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+<div class="modal-body">
+<form id="requestForm" onsubmit="submitForm(event)">
+<div class="form-row">
+<div class="form-group"><label>Agent Name <span class="req">*</span></label><input type="text" id="fName" required placeholder="Your full name"></div>
+<div class="form-group"><label>Email Address <span class="req">*</span></label><input type="email" id="fEmail" required placeholder="you@example.com"></div>
+</div>
+<hr class="section-divider">
+<div class="form-group"><label>What type of submission is this? (Select all that apply) <span class="req">*</span></label>
+<div class="checkbox-group"><label><input type="checkbox" name="submissionType" value="Quick Text"> Quick Text</label><label><input type="checkbox" name="submissionType" value="Knowledge Article"> Knowledge Article</label><label><input type="checkbox" name="submissionType" value="Educational Post"> Educational Post</label></div>
+<div class="form-error" id="typeError">Please select at least one type.</div></div>
+<div class="form-group"><label>Is this a new submission or requesting a change to existing content? <span class="req">*</span></label>
+<div class="radio-group"><label><input type="radio" name="newOrChange" value="New Submission" required> New Submission</label><label><input type="radio" name="newOrChange" value="Change to Existing Content"> Change to Existing Content</label></div></div>
+<hr class="section-divider">
+<div class="section-title">QT/KA Relevant Information</div>
+<div class="section-desc">In the section below please include any relevant information for updating/implementing a Quick Text, Knowledge Article, or Educational Post.</div>
+<div class="form-group"><label>Title of QT/KA/Educational Post <span class="req">*</span></label><div class="form-hint">If this is a new post, include suggested name</div><input type="text" id="fTitle" required placeholder="Enter title or suggested name"></div>
+<div class="form-group"><label>Reason for Change? <span class="req">*</span></label><div class="form-hint">Please list what information should be changed/created below, and why</div><textarea id="fReason" required placeholder="Describe what should be changed or created, and the reason..."></textarea></div>
+<div class="form-group"><label>Additional Information</label><div class="form-hint">Be sure to include any relevant information, links, or impacted content in the section below</div><textarea id="fAdditional" placeholder="Links, references, impacted content..."></textarea></div>
+</form>
+</div>
+<div class="modal-footer"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-submit" onclick="validateAndSubmit()">Submit Request</button></div>
+</div>
+</div>
+<div class="modal-overlay" id="adminOverlay">
+<div class="modal">
+<div class="modal-header"><h2>⚙️ Manage Editors</h2><button class="modal-close" onclick="closeAdmin()">&times;</button></div>
+<div class="modal-body">
+<p style="color:#888;font-size:13px;margin-bottom:16px">Editors can change request statuses, edit, and delete submissions. Viewers can only view and submit new requests.</p>
+<ul class="admin-editor-list" id="editorList"></ul>
+<div class="admin-add-row"><input type="email" id="addEditorEmail" placeholder="Enter email to add as editor"><button onclick="addEditor()">+ Add Editor</button></div>
+</div>
+</div>
+</div>
+<button class="refresh-btn" onclick="refreshTracker()" title="Check for new submissions"><span class="refresh-icon">&#8635;</span></button>
+<div class="refresh-toast" id="refreshToast"></div>
+<script>
+var API_URL = 'https://script.google.com/a/macros/squareup.com/s/AKfycbx87IGtujIZdeo0T0tMOnOj_sjPI-lVdRIWfawBqLhyxOQQPih_QowsA69melJ0seaZkA/exec';
+var currentUser = null;
+var editors = [];
+var requests = [];
+var expandedIds = new Set();
+
+function isEditor() { return currentUser && editors.indexOf(currentUser.email.toLowerCase()) !== -1; }
+
+function apiGet(action, cb) {
+  fetch(API_URL + '?action=' + action)
+    .then(function(r) { return r.json(); })
+    .then(function(d) { cb(null, d); })
+    .catch(function(e) { cb(e, null); });
+}
+
+function apiPost(data, cb) {
+  fetch(API_URL, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain' } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { cb(null, d); })
+    .catch(function(e) { cb(e, null); });
+}
+
+function loadEditors(cb) {
+  apiGet('readEditors', function(err, data) {
+    if (!err && data) editors = data;
+    if (cb) cb();
+  });
+}
+
+function loadRequests(cb) {
+  apiGet('read', function(err, data) {
+    if (!err && data) {
+      requests = data.map(function(r) {
+        r.id = Number(r.id) || 0;
+        return r;
+      });
+    }
+    if (cb) cb();
+  });
+}
+
+function handleLogin() {
+  var name = document.getElementById('loginName').value.trim();
+  var email = document.getElementById('loginEmail').value.trim();
+  if (!name || !email) { document.getElementById('loginError').style.display = 'block'; return; }
+  currentUser = { name: name, email: email.toLowerCase() };
+  localStorage.setItem('btc_current_user', JSON.stringify(currentUser));
+  document.getElementById('loginError').style.display = 'none';
+  initApp();
+}
+
+function handleLogout() {
+  localStorage.removeItem('btc_current_user');
+  currentUser = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function initApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('userName').textContent = currentUser.name;
+  document.getElementById('requestList').innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading submissions...</p></div>';
+  loadEditors(function() {
+    var badge = document.getElementById('roleBadge');
+    if (isEditor()) { badge.textContent = 'EDITOR'; badge.className = 'role-badge editor'; document.getElementById('adminBtn').classList.remove('hidden'); }
+    else { badge.textContent = 'VIEWER'; badge.className = 'role-badge viewer'; document.getElementById('adminBtn').classList.add('hidden'); }
+    loadRequests(function() { renderRequests(); });
+  });
+}
+
+function checkSession() {
+  var stored = localStorage.getItem('btc_current_user');
+  if (stored) { currentUser = JSON.parse(stored); initApp(); }
+}
+
+function formatDate(d) { if (!d) return '—'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function formatDateTime(d) { if (!d) return '—'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+function statusClass(s) { var m={'New':'status-new','In Review':'status-in-review','In Progress':'status-in-progress','Completed':'status-completed','Rejected':'status-rejected'}; return m[s]||'status-new'; }
+
+function renderTypeTags(t) {
+  if (!t) return '—';
+  return String(t).split(', ').map(function(x) {
+    var c='qt'; if(x.includes('Knowledge'))c='ka'; else if(x.includes('Educational'))c='ep';
+    return '<span class="type-tag '+c+'">'+x+'</span>';
+  }).join(' ');
+}
+
+function getFiltered() {
+  var search=document.getElementById('searchInput').value.toLowerCase();
+  var typeF=document.getElementById('filterType').value;
+  var subF=document.getElementById('filterSubmission').value;
+  var statusF=document.getElementById('filterStatus').value;
+  var sortBy=document.getElementById('sortBy').value;
+  var filtered=requests.filter(function(r){
+    var name=String(r.name||'').toLowerCase(), email=String(r.email||'').toLowerCase(), title=String(r.title||'').toLowerCase();
+    if(search&&!name.includes(search)&&!email.includes(search)&&!title.includes(search))return false;
+    if(typeF!=='all'&&!String(r.submissionType||'').includes(typeF))return false;
+    if(subF!=='all'&&r.newOrChange!==subF)return false;
+    if(statusF!=='all'&&r.status!==statusF)return false;
+    return true;
+  });
+  if(sortBy==='date-desc')filtered.sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
+  else filtered.sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
+  return filtered;
+}
+
+function renderRequests() {
+  var filtered=getFiltered();
+  var container=document.getElementById('requestList');
+  document.getElementById('reqCount').textContent=requests.length+' Request'+(requests.length!==1?'s':'');
+  if(filtered.length===0){container.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>No submissions yet. Click "+ New Request" to add one.</p></div>';return;}
+  var ed=isEditor();
+  container.innerHTML=filtered.map(function(r,i){
+    var isOpen=expandedIds.has(r.id);
+    var subClass=(r.newOrChange==='New Submission')?'new-sub':'change-sub';
+    var statusCol='';
+    if(ed){
+      var opts=['New','In Review','In Progress','Completed','Rejected'].map(function(s){return '<option value="'+s+'"'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('');
+      statusCol='<select class="status-select '+statusClass(r.status)+'" onchange="changeStatus('+r.id+',this.value)">'+opts+'</select>';
+    } else {
+      statusCol='<span class="status-badge-readonly '+statusClass(r.status)+'">'+(r.status||'New')+'</span>';
+    }
+    var deleteBtn=ed?'<button style="margin-top:12px;background:#fee2e2;color:#dc2626;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer" onclick="deleteRequest('+r.id+')">🗑 Delete Request</button>':'';
+    return '<div class="row-card">'+
+      '<div class="row-main" onclick="toggleRow('+r.id+')">'+
+        '<div class="row-num">'+(i+1)+'</div>'+
+        '<div class="requester">'+r.name+'<small>'+r.email+'</small></div>'+
+        '<div class="date-col">'+formatDate(r.timestamp)+'</div>'+
+        '<div><span class="submission-badge '+subClass+'">'+(r.newOrChange||'—')+'</span></div>'+
+        '<div onclick="event.stopPropagation()">'+statusCol+'</div>'+
+        '<div class="chevron '+(isOpen?'open':'')+'">&#9662;</div>'+
+      '</div>'+
+      '<div class="detail-panel '+(isOpen?'open':'')+'">'+
+        '<div class="detail-grid">'+
+          '<div class="detail-item"><label>Agent Name</label><p>'+r.name+'</p></div>'+
+          '<div class="detail-item"><label>Email Address</label><p>'+r.email+'</p></div>'+
+          '<div class="detail-item"><label>Date &amp; Time Submitted</label><p>'+formatDateTime(r.timestamp)+'</p></div>'+
+          '<div class="detail-item"><label>New or Change</label><p><span class="submission-badge '+subClass+'">'+(r.newOrChange||'—')+'</span></p></div>'+
+          '<div class="detail-item"><label>Submission Type(s)</label><p>'+renderTypeTags(r.submissionType)+'</p></div>'+
+          '<div class="detail-full"><label>Title of QT/KA/Educational Post</label><p>'+(r.title||'—')+'</p></div>'+
+          '<div class="detail-full"><label>Reason for Change</label><p>'+(r.reason||'—')+'</p></div>'+
+          '<div class="detail-full"><label>Additional Information</label><p>'+(r.additionalInfo||'—')+'</p></div>'+
+        '</div>'+deleteBtn+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function toggleRow(id){if(expandedIds.has(id))expandedIds.delete(id);else expandedIds.add(id);renderRequests();}
+
+function changeStatus(id,val){
+  showToast('⏳ Updating status...');
+  apiPost({action:'updateStatus',id:String(id),status:val},function(err){
+    if(err){showToast('⚠️ Failed to update status');return;}
+    var r=requests.find(function(x){return x.id===id;});
+    if(r)r.status=val;
+    renderRequests();
+    showToast('✅ Status updated');
+  });
+}
+
+function deleteRequest(id){
+  if(!confirm('Are you sure you want to delete this request?'))return;
+  showToast('⏳ Deleting...');
+  apiPost({action:'deleteRow',id:String(id)},function(err){
+    if(err){showToast('⚠️ Failed to delete');return;}
+    requests=requests.filter(function(x){return x.id!==id;});
+    renderRequests();
+    showToast('🗑 Request deleted');
+  });
+}
+
+function openModal(){
+  document.getElementById('modalOverlay').classList.add('active');
+  document.getElementById('requestForm').reset();
+  document.getElementById('typeError').style.display='none';
+  if(currentUser){document.getElementById('fName').value=currentUser.name;document.getElementById('fEmail').value=currentUser.email;}
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function validateAndSubmit(){
+  var checked=document.querySelectorAll('input[name="submissionType"]:checked');
+  if(checked.length===0){document.getElementById('typeError').style.display='block';return;}
+  document.getElementById('typeError').style.display='none';
+  document.getElementById('requestForm').requestSubmit();
+}
+
+function submitForm(e){
+  e.preventDefault();
+  var name=document.getElementById('fName').value.trim();
+  var email=document.getElementById('fEmail').value.trim();
+  var title=document.getElementById('fTitle').value.trim();
+  var reason=document.getElementById('fReason').value.trim();
+  if(!name||!email||!title||!reason)return;
+  var types=[];document.querySelectorAll('input[name="submissionType"]:checked').forEach(function(cb){types.push(cb.value);});
+  if(types.length===0)return;
+  var noc=document.querySelector('input[name="newOrChange"]:checked');
+  if(!noc)return;
+  var row={id:Date.now(),name:name,email:email,timestamp:new Date().toISOString(),submissionType:types.join(', '),newOrChange:noc.value,title:title,reason:reason,additionalInfo:document.getElementById('fAdditional').value.trim(),status:'New'};
+  showToast('⏳ Submitting request...');
+  closeModal();
+  apiPost({action:'add',row:row},function(err){
+    if(err){showToast('⚠️ Failed to submit');return;}
+    requests.unshift(row);
+    renderRequests();
+    showToast('✅ Request submitted!');
+  });
+}
+
+function openAdmin(){document.getElementById('adminOverlay').classList.add('active');renderEditorList();}
+function closeAdmin(){document.getElementById('adminOverlay').classList.remove('active');}
+document.getElementById('adminOverlay').addEventListener('click',function(e){if(e.target===this)closeAdmin();});
+
+function renderEditorList(){
+  var list=document.getElementById('editorList');
+  list.innerHTML=editors.map(function(email){
+    var isDefault=email==='festeves@squareup.com';
+    var tag=isDefault?'<span class="admin-tag">(Admin)</span>':'';
+    var removeBtn=isDefault?'':'<button class="btn-remove" onclick="removeEditor(\''+email+'\')">Remove</button>';
+    return '<li><div>'+email+tag+'</div>'+removeBtn+'</li>';
+  }).join('');
+}
+
+function addEditor(){
+  var input=document.getElementById('addEditorEmail');
+  var email=input.value.trim().toLowerCase();
+  if(!email||!email.includes('@'))return;
+  if(editors.indexOf(email)!==-1){showToast('⚠️ Already an editor');return;}
+  editors.push(email);
+  showToast('⏳ Saving...');
+  apiPost({action:'saveEditors',editors:editors},function(err){
+    if(err){showToast('⚠️ Failed to save');return;}
+    renderEditorList();input.value='';showToast('✅ Editor added: '+email);
+  });
+}
+
+function removeEditor(email){
+  if(email==='festeves@squareup.com'){showToast('⚠️ Cannot remove the admin');return;}
+  editors=editors.filter(function(e){return e!==email;});
+  showToast('⏳ Saving...');
+  apiPost({action:'saveEditors',editors:editors},function(err){
+    if(err){showToast('⚠️ Failed to save');return;}
+    renderEditorList();showToast('🗑 Editor removed: '+email);
+    if(currentUser&&currentUser.email===email)initApp();
+  });
+}
+
+function refreshTracker(){
+  var btn=document.querySelector('.refresh-btn');btn.classList.add('spinning');
+  var oldCount=requests.length;
+  loadRequests(function(){
+    btn.classList.remove('spinning');
+    renderRequests();
+    var diff=requests.length-oldCount;
+    if(diff>0)showToast('✅ '+diff+' new submission'+(diff>1?'s':'')+' found!');
+    else showToast('✅ Tracker is up to date');
+  });
+}
+
+function showToast(msg){
+  var t=document.getElementById('refreshToast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+checkSession();
+</script>
+</body>
+</html>
