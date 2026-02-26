@@ -144,7 +144,7 @@ header h1 span{color:#F7931A}
 <div class="user-info">
 <span id="userName"></span>
 <span class="role-badge" id="roleBadge"></span>
-<button class="btn-admin hidden" id="adminBtn" onclick="openAdmin()">⚙ Manage Editors</button>
+<button class="btn-admin hidden" id="adminBtn" onclick="openAdmin()">‚öô Manage Editors</button>
 <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
 </div>
 </div>
@@ -162,7 +162,7 @@ header h1 span{color:#F7931A}
 </div>
 <div class="modal-overlay" id="modalOverlay">
 <div class="modal">
-<div class="modal-header"><h2>📝 Content Change Request</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+<div class="modal-header"><h2>üìù Content Change Request</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
 <div class="modal-body">
 <form id="requestForm" onsubmit="submitForm(event)">
 <div class="form-row">
@@ -188,7 +188,7 @@ header h1 span{color:#F7931A}
 </div>
 <div class="modal-overlay" id="adminOverlay">
 <div class="modal">
-<div class="modal-header"><h2>⚙️ Manage Editors</h2><button class="modal-close" onclick="closeAdmin()">&times;</button></div>
+<div class="modal-header"><h2>‚öôÔ∏è Manage Editors</h2><button class="modal-close" onclick="closeAdmin()">&times;</button></div>
 <div class="modal-body">
 <p style="color:#888;font-size:13px;margin-bottom:16px">Editors can change request statuses, edit, and delete submissions. Viewers can only view and submit new requests.</p>
 <ul class="admin-editor-list" id="editorList"></ul>
@@ -199,7 +199,10 @@ header h1 span{color:#F7931A}
 <button class="refresh-btn" onclick="refreshTracker()" title="Check for new submissions"><span class="refresh-icon">&#8635;</span></button>
 <div class="refresh-toast" id="refreshToast"></div>
 <script>
-var API_URL = 'https://script.google.com/a/macros/squareup.com/s/AKfycbx87IGtujIZdeo0T0tMOnOj_sjPI-lVdRIWfawBqLhyxOQQPih_QowsA69melJ0seaZkA/exec';
+var MASTER_KEY = '$2a$10$zRqJg3qq90npUZkgKj8Sleq9T17h7r/SkAy7i/qgH0q8qwJ8kMxKC';
+var REQUESTS_BIN = '69a0aab7d0ea881f40dcc9ee';
+var EDITORS_BIN = '69a0aabfae596e708f4d2c10';
+var API_BASE = 'https://api.jsonbin.io/v3/b/';
 var currentUser = null;
 var editors = [];
 var requests = [];
@@ -207,37 +210,40 @@ var expandedIds = new Set();
 
 function isEditor() { return currentUser && editors.indexOf(currentUser.email.toLowerCase()) !== -1; }
 
-function apiGet(action, cb) {
-  fetch(API_URL + '?action=' + action)
+function binGet(binId, cb) {
+  fetch(API_BASE + binId + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } })
     .then(function(r) { return r.json(); })
-    .then(function(d) { cb(null, d); })
+    .then(function(d) { cb(null, d.record); })
     .catch(function(e) { cb(e, null); });
 }
 
-function apiPost(data, cb) {
-  fetch(API_URL, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain' } })
+function binPut(binId, data, cb) {
+  fetch(API_BASE + binId, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY }, body: JSON.stringify(data) })
     .then(function(r) { return r.json(); })
-    .then(function(d) { cb(null, d); })
+    .then(function(d) { cb(null, d.record); })
     .catch(function(e) { cb(e, null); });
 }
 
 function loadEditors(cb) {
-  apiGet('readEditors', function(err, data) {
-    if (!err && data) editors = data;
+  binGet(EDITORS_BIN, function(err, data) {
+    if (!err && data && data.editors) editors = data.editors;
     if (cb) cb();
   });
 }
 
+function saveEditorsBin(cb) {
+  binPut(EDITORS_BIN, { editors: editors }, function(err) { if (cb) cb(err); });
+}
+
 function loadRequests(cb) {
-  apiGet('read', function(err, data) {
-    if (!err && data) {
-      requests = data.map(function(r) {
-        r.id = Number(r.id) || 0;
-        return r;
-      });
-    }
+  binGet(REQUESTS_BIN, function(err, data) {
+    if (!err && data && data.requests) requests = data.requests;
     if (cb) cb();
   });
+}
+
+function saveRequestsBin(cb) {
+  binPut(REQUESTS_BIN, { requests: requests }, function(err) { if (cb) cb(err); });
 }
 
 function handleLogin() {
@@ -273,12 +279,12 @@ function checkSession() {
   if (stored) { currentUser = JSON.parse(stored); initApp(); }
 }
 
-function formatDate(d) { if (!d) return '—'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
-function formatDateTime(d) { if (!d) return '—'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+function formatDate(d) { if (!d) return '‚Äî'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function formatDateTime(d) { if (!d) return '‚Äî'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
 function statusClass(s) { var m={'New':'status-new','In Review':'status-in-review','In Progress':'status-in-progress','Completed':'status-completed','Rejected':'status-rejected'}; return m[s]||'status-new'; }
 
 function renderTypeTags(t) {
-  if (!t) return '—';
+  if (!t) return '‚Äî';
   return String(t).split(', ').map(function(x) {
     var c='qt'; if(x.includes('Knowledge'))c='ka'; else if(x.includes('Educational'))c='ep';
     return '<span class="type-tag '+c+'">'+x+'</span>';
@@ -292,8 +298,8 @@ function getFiltered() {
   var statusF=document.getElementById('filterStatus').value;
   var sortBy=document.getElementById('sortBy').value;
   var filtered=requests.filter(function(r){
-    var name=String(r.name||'').toLowerCase(), email=String(r.email||'').toLowerCase(), title=String(r.title||'').toLowerCase();
-    if(search&&!name.includes(search)&&!email.includes(search)&&!title.includes(search))return false;
+    var n=String(r.name||'').toLowerCase(),e=String(r.email||'').toLowerCase(),ti=String(r.title||'').toLowerCase();
+    if(search&&!n.includes(search)&&!e.includes(search)&&!ti.includes(search))return false;
     if(typeF!=='all'&&!String(r.submissionType||'').includes(typeF))return false;
     if(subF!=='all'&&r.newOrChange!==subF)return false;
     if(statusF!=='all'&&r.status!==statusF)return false;
@@ -308,7 +314,7 @@ function renderRequests() {
   var filtered=getFiltered();
   var container=document.getElementById('requestList');
   document.getElementById('reqCount').textContent=requests.length+' Request'+(requests.length!==1?'s':'');
-  if(filtered.length===0){container.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>No submissions yet. Click "+ New Request" to add one.</p></div>';return;}
+  if(filtered.length===0){container.innerHTML='<div class="empty-state"><div class="icon">üì≠</div><p>No submissions yet. Click "+ New Request" to add one.</p></div>';return;}
   var ed=isEditor();
   container.innerHTML=filtered.map(function(r,i){
     var isOpen=expandedIds.has(r.id);
@@ -320,13 +326,13 @@ function renderRequests() {
     } else {
       statusCol='<span class="status-badge-readonly '+statusClass(r.status)+'">'+(r.status||'New')+'</span>';
     }
-    var deleteBtn=ed?'<button style="margin-top:12px;background:#fee2e2;color:#dc2626;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer" onclick="deleteRequest('+r.id+')">🗑 Delete Request</button>':'';
+    var deleteBtn=ed?'<button style="margin-top:12px;background:#fee2e2;color:#dc2626;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer" onclick="deleteRequest('+r.id+')">üóë Delete Request</button>':'';
     return '<div class="row-card">'+
       '<div class="row-main" onclick="toggleRow('+r.id+')">'+
         '<div class="row-num">'+(i+1)+'</div>'+
         '<div class="requester">'+r.name+'<small>'+r.email+'</small></div>'+
         '<div class="date-col">'+formatDate(r.timestamp)+'</div>'+
-        '<div><span class="submission-badge '+subClass+'">'+(r.newOrChange||'—')+'</span></div>'+
+        '<div><span class="submission-badge '+subClass+'">'+(r.newOrChange||'‚Äî')+'</span></div>'+
         '<div onclick="event.stopPropagation()">'+statusCol+'</div>'+
         '<div class="chevron '+(isOpen?'open':'')+'">&#9662;</div>'+
       '</div>'+
@@ -335,11 +341,11 @@ function renderRequests() {
           '<div class="detail-item"><label>Agent Name</label><p>'+r.name+'</p></div>'+
           '<div class="detail-item"><label>Email Address</label><p>'+r.email+'</p></div>'+
           '<div class="detail-item"><label>Date &amp; Time Submitted</label><p>'+formatDateTime(r.timestamp)+'</p></div>'+
-          '<div class="detail-item"><label>New or Change</label><p><span class="submission-badge '+subClass+'">'+(r.newOrChange||'—')+'</span></p></div>'+
+          '<div class="detail-item"><label>New or Change</label><p><span class="submission-badge '+subClass+'">'+(r.newOrChange||'‚Äî')+'</span></p></div>'+
           '<div class="detail-item"><label>Submission Type(s)</label><p>'+renderTypeTags(r.submissionType)+'</p></div>'+
-          '<div class="detail-full"><label>Title of QT/KA/Educational Post</label><p>'+(r.title||'—')+'</p></div>'+
-          '<div class="detail-full"><label>Reason for Change</label><p>'+(r.reason||'—')+'</p></div>'+
-          '<div class="detail-full"><label>Additional Information</label><p>'+(r.additionalInfo||'—')+'</p></div>'+
+          '<div class="detail-full"><label>Title of QT/KA/Educational Post</label><p>'+(r.title||'‚Äî')+'</p></div>'+
+          '<div class="detail-full"><label>Reason for Change</label><p>'+(r.reason||'‚Äî')+'</p></div>'+
+          '<div class="detail-full"><label>Additional Information</label><p>'+(r.additionalInfo||'‚Äî')+'</p></div>'+
         '</div>'+deleteBtn+
       '</div>'+
     '</div>';
@@ -349,24 +355,24 @@ function renderRequests() {
 function toggleRow(id){if(expandedIds.has(id))expandedIds.delete(id);else expandedIds.add(id);renderRequests();}
 
 function changeStatus(id,val){
-  showToast('⏳ Updating status...');
-  apiPost({action:'updateStatus',id:String(id),status:val},function(err){
-    if(err){showToast('⚠️ Failed to update status');return;}
-    var r=requests.find(function(x){return x.id===id;});
-    if(r)r.status=val;
+  showToast('‚è≥ Updating status...');
+  var r=requests.find(function(x){return x.id===id;});
+  if(r)r.status=val;
+  saveRequestsBin(function(err){
+    if(err){showToast('‚ö†Ô∏è Failed to update status');return;}
     renderRequests();
-    showToast('✅ Status updated');
+    showToast('‚úÖ Status updated');
   });
 }
 
 function deleteRequest(id){
   if(!confirm('Are you sure you want to delete this request?'))return;
-  showToast('⏳ Deleting...');
-  apiPost({action:'deleteRow',id:String(id)},function(err){
-    if(err){showToast('⚠️ Failed to delete');return;}
-    requests=requests.filter(function(x){return x.id!==id;});
+  showToast('‚è≥ Deleting...');
+  requests=requests.filter(function(x){return x.id!==id;});
+  saveRequestsBin(function(err){
+    if(err){showToast('‚ö†Ô∏è Failed to delete');return;}
     renderRequests();
-    showToast('🗑 Request deleted');
+    showToast('üóë Request deleted');
   });
 }
 
@@ -398,13 +404,13 @@ function submitForm(e){
   var noc=document.querySelector('input[name="newOrChange"]:checked');
   if(!noc)return;
   var row={id:Date.now(),name:name,email:email,timestamp:new Date().toISOString(),submissionType:types.join(', '),newOrChange:noc.value,title:title,reason:reason,additionalInfo:document.getElementById('fAdditional').value.trim(),status:'New'};
-  showToast('⏳ Submitting request...');
+  showToast('‚è≥ Submitting request...');
   closeModal();
-  apiPost({action:'add',row:row},function(err){
-    if(err){showToast('⚠️ Failed to submit');return;}
-    requests.unshift(row);
+  requests.unshift(row);
+  saveRequestsBin(function(err){
+    if(err){showToast('‚ö†Ô∏è Failed to submit');requests.shift();renderRequests();return;}
     renderRequests();
-    showToast('✅ Request submitted!');
+    showToast('‚úÖ Request submitted!');
   });
 }
 
@@ -426,22 +432,22 @@ function addEditor(){
   var input=document.getElementById('addEditorEmail');
   var email=input.value.trim().toLowerCase();
   if(!email||!email.includes('@'))return;
-  if(editors.indexOf(email)!==-1){showToast('⚠️ Already an editor');return;}
+  if(editors.indexOf(email)!==-1){showToast('‚ö†Ô∏è Already an editor');return;}
   editors.push(email);
-  showToast('⏳ Saving...');
-  apiPost({action:'saveEditors',editors:editors},function(err){
-    if(err){showToast('⚠️ Failed to save');return;}
-    renderEditorList();input.value='';showToast('✅ Editor added: '+email);
+  showToast('‚è≥ Saving...');
+  saveEditorsBin(function(err){
+    if(err){showToast('‚ö†Ô∏è Failed to save');return;}
+    renderEditorList();input.value='';showToast('‚úÖ Editor added: '+email);
   });
 }
 
 function removeEditor(email){
-  if(email==='festeves@squareup.com'){showToast('⚠️ Cannot remove the admin');return;}
+  if(email==='festeves@squareup.com'){showToast('‚ö†Ô∏è Cannot remove the admin');return;}
   editors=editors.filter(function(e){return e!==email;});
-  showToast('⏳ Saving...');
-  apiPost({action:'saveEditors',editors:editors},function(err){
-    if(err){showToast('⚠️ Failed to save');return;}
-    renderEditorList();showToast('🗑 Editor removed: '+email);
+  showToast('‚è≥ Saving...');
+  saveEditorsBin(function(err){
+    if(err){showToast('‚ö†Ô∏è Failed to save');return;}
+    renderEditorList();showToast('üóë Editor removed: '+email);
     if(currentUser&&currentUser.email===email)initApp();
   });
 }
@@ -453,8 +459,8 @@ function refreshTracker(){
     btn.classList.remove('spinning');
     renderRequests();
     var diff=requests.length-oldCount;
-    if(diff>0)showToast('✅ '+diff+' new submission'+(diff>1?'s':'')+' found!');
-    else showToast('✅ Tracker is up to date');
+    if(diff>0)showToast('‚úÖ '+diff+' new submission'+(diff>1?'s':'')+' found!');
+    else showToast('‚úÖ Tracker is up to date');
   });
 }
 
