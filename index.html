@@ -144,7 +144,7 @@ header h1 span{color:#F7931A}
 <div class="user-info">
 <span id="userName"></span>
 <span class="role-badge" id="roleBadge"></span>
-<button class="btn-admin hidden" id="adminBtn" onclick="openAdmin()">‚öô Manage Editors</button>
+<button class="btn-admin hidden" id="adminBtn" onclick="openAdmin()">Manage Editors</button>
 <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
 </div>
 </div>
@@ -162,7 +162,7 @@ header h1 span{color:#F7931A}
 </div>
 <div class="modal-overlay" id="modalOverlay">
 <div class="modal">
-<div class="modal-header"><h2>üìù Content Change Request</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+<div class="modal-header"><h2>Content Change Request</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
 <div class="modal-body">
 <form id="requestForm" onsubmit="submitForm(event)">
 <div class="form-row">
@@ -188,7 +188,7 @@ header h1 span{color:#F7931A}
 </div>
 <div class="modal-overlay" id="adminOverlay">
 <div class="modal">
-<div class="modal-header"><h2>‚öôÔ∏è Manage Editors</h2><button class="modal-close" onclick="closeAdmin()">&times;</button></div>
+<div class="modal-header"><h2>Settings - Manage Editors</h2><button class="modal-close" onclick="closeAdmin()">&times;</button></div>
 <div class="modal-body">
 <p style="color:#888;font-size:13px;margin-bottom:16px">Editors can change request statuses, edit, and delete submissions. Viewers can only view and submit new requests.</p>
 <ul class="admin-editor-list" id="editorList"></ul>
@@ -314,7 +314,7 @@ function renderRequests() {
   var filtered=getFiltered();
   var container=document.getElementById('requestList');
   document.getElementById('reqCount').textContent=requests.length+' Request'+(requests.length!==1?'s':'');
-  if(filtered.length===0){container.innerHTML='<div class="empty-state"><div class="icon">üì≠</div><p>No submissions yet. Click "+ New Request" to add one.</p></div>';return;}
+  if(filtered.length===0){container.innerHTML='<div class="empty-state"><div class="icon">&#9993;</div><p>No submissions yet. Click "+ New Request" to add one.</p></div>';return;}
   var ed=isEditor();
   container.innerHTML=filtered.map(function(r,i){
     var isOpen=expandedIds.has(r.id);
@@ -326,7 +326,7 @@ function renderRequests() {
     } else {
       statusCol='<span class="status-badge-readonly '+statusClass(r.status)+'">'+(r.status||'New')+'</span>';
     }
-    var deleteBtn=ed?'<button style="margin-top:12px;background:#fee2e2;color:#dc2626;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer" onclick="deleteRequest('+r.id+')">üóë Delete Request</button>':'';
+    var deleteBtn=ed?'<button style="margin-top:12px;background:#fee2e2;color:#dc2626;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer" onclick="deleteRequest('+r.id+')">Delete Request</button>':'';
     return '<div class="row-card">'+
       '<div class="row-main" onclick="toggleRow('+r.id+')">'+
         '<div class="row-num">'+(i+1)+'</div>'+
@@ -355,24 +355,24 @@ function renderRequests() {
 function toggleRow(id){if(expandedIds.has(id))expandedIds.delete(id);else expandedIds.add(id);renderRequests();}
 
 function changeStatus(id,val){
-  showToast('‚è≥ Updating status...');
+  showToast('Loading... Updating status...');
   var r=requests.find(function(x){return x.id===id;});
   if(r)r.status=val;
   saveRequestsBin(function(err){
-    if(err){showToast('‚ö†Ô∏è Failed to update status');return;}
+    if(err){showToast('Warning: Failed to update status');return;}
     renderRequests();
-    showToast('‚úÖ Status updated');
+    showToast('Done: Status updated');
   });
 }
 
 function deleteRequest(id){
   if(!confirm('Are you sure you want to delete this request?'))return;
-  showToast('‚è≥ Deleting...');
+  showToast('Loading... Deleting...');
   requests=requests.filter(function(x){return x.id!==id;});
   saveRequestsBin(function(err){
-    if(err){showToast('‚ö†Ô∏è Failed to delete');return;}
+    if(err){showToast('Warning: Failed to delete');return;}
     renderRequests();
-    showToast('üóë Request deleted');
+    showToast('Request deleted');
   });
 }
 
@@ -404,13 +404,13 @@ function submitForm(e){
   var noc=document.querySelector('input[name="newOrChange"]:checked');
   if(!noc)return;
   var row={id:Date.now(),name:name,email:email,timestamp:new Date().toISOString(),submissionType:types.join(', '),newOrChange:noc.value,title:title,reason:reason,additionalInfo:document.getElementById('fAdditional').value.trim(),status:'New'};
-  showToast('‚è≥ Submitting request...');
+  showToast('Loading... Submitting request...');
   closeModal();
   requests.unshift(row);
   saveRequestsBin(function(err){
-    if(err){showToast('‚ö†Ô∏è Failed to submit');requests.shift();renderRequests();return;}
+    if(err){showToast('Warning: Failed to submit');requests.shift();renderRequests();return;}
     renderRequests();
-    showToast('‚úÖ Request submitted!');
+    showToast('Done: Request submitted!');
   });
 }
 
@@ -432,22 +432,22 @@ function addEditor(){
   var input=document.getElementById('addEditorEmail');
   var email=input.value.trim().toLowerCase();
   if(!email||!email.includes('@'))return;
-  if(editors.indexOf(email)!==-1){showToast('‚ö†Ô∏è Already an editor');return;}
+  if(editors.indexOf(email)!==-1){showToast('Warning: Already an editor');return;}
   editors.push(email);
-  showToast('‚è≥ Saving...');
+  showToast('Loading... Saving...');
   saveEditorsBin(function(err){
-    if(err){showToast('‚ö†Ô∏è Failed to save');return;}
-    renderEditorList();input.value='';showToast('‚úÖ Editor added: '+email);
+    if(err){showToast('Warning: Failed to save');return;}
+    renderEditorList();input.value='';showToast('Done: Editor added: '+email);
   });
 }
 
 function removeEditor(email){
-  if(email==='festeves@squareup.com'){showToast('‚ö†Ô∏è Cannot remove the admin');return;}
+  if(email==='festeves@squareup.com'){showToast('Warning: Cannot remove the admin');return;}
   editors=editors.filter(function(e){return e!==email;});
-  showToast('‚è≥ Saving...');
+  showToast('Loading... Saving...');
   saveEditorsBin(function(err){
-    if(err){showToast('‚ö†Ô∏è Failed to save');return;}
-    renderEditorList();showToast('üóë Editor removed: '+email);
+    if(err){showToast('Warning: Failed to save');return;}
+    renderEditorList();showToast('Editor removed: '+email);
     if(currentUser&&currentUser.email===email)initApp();
   });
 }
@@ -459,8 +459,8 @@ function refreshTracker(){
     btn.classList.remove('spinning');
     renderRequests();
     var diff=requests.length-oldCount;
-    if(diff>0)showToast('‚úÖ '+diff+' new submission'+(diff>1?'s':'')+' found!');
-    else showToast('‚úÖ Tracker is up to date');
+    if(diff>0)showToast('Done: '+diff+' new submission'+(diff>1?'s':'')+' found!');
+    else showToast('Done: Tracker is up to date');
   });
 }
 
