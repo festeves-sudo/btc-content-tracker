@@ -279,6 +279,17 @@ function checkSession() {
   if (stored) { currentUser = JSON.parse(stored); initApp(); }
 }
 
+function linkify(text) {
+  if (!text) return '‚Äî';
+  var str = String(text);
+  var pattern = /(https?:\/\/[^\s<]+)|(www\.[^\s<]+)|([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.(?:com|org|net|io|co|gov|edu|info|biz|us|uk|ca|app|dev|page|site|xyz|me)(?:\/[^\s<]*)?)/gi;
+  return str.replace(pattern, function(match) {
+    var href = match;
+    if (!/^https?:\/\//i.test(href)) href = 'https://' + href;
+    return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="color:#F7931A;text-decoration:underline;word-break:break-all">' + match + '</a>';
+  });
+}
+
 function formatDate(d) { if (!d) return '‚Äî'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function formatDateTime(d) { if (!d) return '‚Äî'; var dt = new Date(d); return isNaN(dt) ? String(d) : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
 function statusClass(s) { var m={'New':'status-new','In Review':'status-in-review','In Progress':'status-in-progress','Completed':'status-completed','Rejected':'status-rejected'}; return m[s]||'status-new'; }
@@ -343,9 +354,9 @@ function renderRequests() {
           '<div class="detail-item"><label>Date &amp; Time Submitted</label><p>'+formatDateTime(r.timestamp)+'</p></div>'+
           '<div class="detail-item"><label>New or Change</label><p><span class="submission-badge '+subClass+'">'+(r.newOrChange||'‚Äî')+'</span></p></div>'+
           '<div class="detail-item"><label>Submission Type(s)</label><p>'+renderTypeTags(r.submissionType)+'</p></div>'+
-          '<div class="detail-full"><label>Title of QT/KA/Educational Post</label><p>'+(r.title||'‚Äî')+'</p></div>'+
-          '<div class="detail-full"><label>Reason for Change</label><p>'+(r.reason||'‚Äî')+'</p></div>'+
-          '<div class="detail-full"><label>Additional Information</label><p>'+(r.additionalInfo||'‚Äî')+'</p></div>'+
+          '<div class="detail-full"><label>Title of QT/KA/Educational Post</label><p>'+linkify(r.title||'‚Äî')+'</p></div>'+
+          '<div class="detail-full"><label>Reason for Change</label><p>'+linkify(r.reason||'‚Äî')+'</p></div>'+
+          '<div class="detail-full"><label>Additional Information</label><p>'+linkify(r.additionalInfo||'‚Äî')+'</p></div>'+
         '</div>'+deleteBtn+
       '</div>'+
     '</div>';
