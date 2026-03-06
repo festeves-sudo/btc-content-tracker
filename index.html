@@ -132,6 +132,8 @@ header h1 span{color:#F7931A}
 <p>Sign in to view and submit content change requests</p>
 <input type="text" id="loginName" placeholder="Your full name">
 <input type="email" id="loginEmail" placeholder="Your email address">
+<input type="password" id="loginPin" placeholder="Editor PIN (optional)" style="letter-spacing:4px;text-align:center">
+<p style="font-size:11px;color:#aaa;margin-bottom:16px;margin-top:-4px">Leave PIN blank for Viewer access</p>
 <button class="btn-login" onclick="handleLogin()">Sign In</button>
 <div class="form-error" id="loginError" style="margin-top:12px">Please fill in both fields.</div>
 </div>
@@ -205,10 +207,11 @@ var EDITORS_BIN = '69a0aabfae596e708f4d2c10';
 var API_BASE = 'https://api.jsonbin.io/v3/b/';
 var currentUser = null;
 var editors = [];
+var editorPin = '';
 var requests = [];
 var expandedIds = new Set();
 
-function isEditor() { return currentUser && editors.indexOf(currentUser.email.toLowerCase()) !== -1; }
+function isEditor() { return currentUser && currentUser.pinVerified && editors.indexOf(currentUser.email.toLowerCase()) !== -1; }
 
 function binGet(binId, cb) {
   fetch(API_BASE + binId + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } })
@@ -226,13 +229,16 @@ function binPut(binId, data, cb) {
 
 function loadEditors(cb) {
   binGet(EDITORS_BIN, function(err, data) {
-    if (!err && data && data.editors) editors = data.editors;
+    if (!err && data) {
+      if (data.editors) editors = data.editors;
+      if (data.pin) editorPin = data.pin;
+    }
     if (cb) cb();
   });
 }
 
 function saveEditorsBin(cb) {
-  binPut(EDITORS_BIN, { editors: editors }, function(err) { if (cb) cb(err); });
+  binPut(EDITORS_BIN, { editors: editors, pin: editorPin }, function(err) { if (cb) cb(err); });
 }
 
 function loadRequests(cb) {
@@ -249,10 +255,11 @@ function saveRequestsBin(cb) {
 function handleLogin() {
   var name = document.getElementById('loginName').value.trim();
   var email = document.getElementById('loginEmail').value.trim();
+  var pin = document.getElementById('loginPin').value.trim();
   if (!name || !email) { document.getElementById('loginError').style.display = 'block'; return; }
-  currentUser = { name: name, email: email.toLowerCase() };
-  localStorage.setItem('btc_current_user', JSON.stringify(currentUser));
   document.getElementById('loginError').style.display = 'none';
+  currentUser = { name: name, email: email.toLowerCase(), pinEntry: pin };
+  localStorage.setItem('btc_current_user', JSON.stringify(currentUser));
   initApp();
 }
 
@@ -260,6 +267,7 @@ function handleLogout() {
   localStorage.removeItem('btc_current_user');
   currentUser = null;
   document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPin').value = '';
 }
 
 function initApp() {
@@ -267,6 +275,8 @@ function initApp() {
   document.getElementById('userName').textContent = currentUser.name;
   document.getElementById('requestList').innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading submissions...</p></div>';
   loadEditors(function() {
+    currentUser.pinVerified = (currentUser.pinEntry === editorPin && editorPin !== '');
+    localStorage.setItem('btc_current_user', JSON.stringify(currentUser));
     var badge = document.getElementById('roleBadge');
     if (isEditor()) { badge.textContent = 'EDITOR'; badge.className = 'role-badge editor'; document.getElementById('adminBtn').classList.remove('hidden'); }
     else { badge.textContent = 'VIEWER'; badge.className = 'role-badge viewer'; document.getElementById('adminBtn').classList.add('hidden'); }
