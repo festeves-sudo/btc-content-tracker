@@ -294,7 +294,14 @@ function loadEditors(cb) {
 }
 
 function saveEditorsBin(cb) {
-  binPut(EDITORS_BIN, { editors: editors, pin: editorPin, jiraToken: JIRA_TOKEN, jiraEmail: JIRA_EMAIL }, function(err) { if (cb) cb(err); });
+  binGet(EDITORS_BIN, function(err, data) {
+    var saveData = { editors: editors, pin: editorPin };
+    if (data && data.jiraToken) saveData.jiraToken = data.jiraToken;
+    else if (JIRA_TOKEN) saveData.jiraToken = JIRA_TOKEN;
+    if (data && data.jiraEmail) saveData.jiraEmail = data.jiraEmail;
+    else if (JIRA_EMAIL) saveData.jiraEmail = JIRA_EMAIL;
+    binPut(EDITORS_BIN, saveData, function(err2) { if (cb) cb(err2); });
+  });
 }
 
 function loadRequests(cb) {
