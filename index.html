@@ -652,6 +652,7 @@ document.getElementById('viewFeedbackOverlay').addEventListener('click',function
 var JIRA_TOKEN = '';
 var JIRA_EMAIL = '';
 var JIRA_BASE = 'https://block.atlassian.net';
+var CORS_PROXY = 'https://corsproxy.io/?';
 var JIRA_SD_ID = '59';
 var JIRA_RT_ID = '3155';
 
@@ -719,7 +720,7 @@ function createJiraTicket(id) {
   if (r.additionalInfo) payload.requestFieldValues.customfield_14524 = r.additionalInfo;
   var footer = document.getElementById('jiraModalFooter');
   footer.innerHTML = '<p style="color:#888">Creating Jira ticket...</p>';
-  fetch(JIRA_BASE+'/rest/servicedeskapi/request', {
+  fetch(CORS_PROXY+encodeURIComponent(JIRA_BASE+'/rest/servicedeskapi/request'), {
     method: 'POST',
     headers: {
       'Authorization': 'Basic '+btoa(JIRA_EMAIL+':'+JIRA_TOKEN),
