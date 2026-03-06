@@ -154,6 +154,15 @@ header h1 span{color:#F7931A}
 .top-submitters .sub-count{font-weight:600;color:#555}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 @media(max-width:768px){.stat-cards{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.chart-label{width:100px}}
+.btn-jira{background:#0052CC;color:#fff;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;margin-top:12px;margin-right:8px;display:inline-block}
+.btn-jira:hover{background:#0747A6}
+.btn-jira-view{background:#d1fae5;color:#047857;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;margin-top:12px;margin-right:8px;display:inline-block;text-decoration:none}
+.btn-jira-view:hover{background:#a7f3d0}
+.jira-field-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;background:#f9f9f9;border-radius:8px;margin-bottom:6px}
+.jira-field-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;width:140px;flex-shrink:0}
+.jira-field-value{font-size:14px;color:#333;flex:1;word-break:break-word}
+.jira-confirm-list{list-style:none;padding:0;margin-bottom:16px}
+.jira-status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:#dbeafe;color:#0052CC}
 @media(max-width:768px){.table-header{display:none}.row-main{grid-template-columns:1fr;gap:6px}.detail-grid{grid-template-columns:1fr}.filters{flex-direction:column}.filters input{width:100%}.form-row{grid-template-columns:1fr}}
 </style>
 </head>
@@ -234,6 +243,13 @@ header h1 span{color:#F7931A}
 <ul class="admin-editor-list" id="editorList"></ul>
 <div class="admin-add-row"><input type="email" id="addEditorEmail" placeholder="Enter email to add as editor"><button onclick="addEditor()">+ Add Editor</button></div>
 </div>
+</div>
+</div>
+<div class="modal-overlay" id="jiraOverlay">
+<div class="modal">
+<div class="modal-header"><h2>File Jira Ticket</h2><button class="modal-close" onclick="closeJira()">&times;</button></div>
+<div class="modal-body" id="jiraModalBody"></div>
+<div class="modal-footer" id="jiraModalFooter"></div>
 </div>
 </div>
 <button class="refresh-btn" onclick="refreshTracker()" title="Check for new submissions"><span class="refresh-icon">&#8635;</span></button>
@@ -385,6 +401,11 @@ function renderRequests() {
     } else {
       statusCol='<span class="status-badge-readonly '+statusClass(r.status)+'">'+(r.status||'New')+'</span>';
     }
+    var jiraBtn='';
+    if(ed){
+      if(r.jiraUrl){jiraBtn='<a href="'+r.jiraUrl+'" target="_blank" rel="noopener" class="btn-jira-view">View Jira</a>';}
+      else{jiraBtn='<button class="btn-jira" onclick="event.stopPropagation();openJira('+r.id+')">File Jira</button>';}
+    } else if(r.jiraUrl){jiraBtn='<a href="'+r.jiraUrl+'" target="_blank" rel="noopener" class="btn-jira-view">View Jira</a>';}
     var deleteBtn=ed?'<button style="margin-top:12px;background:#fee2e2;color:#dc2626;border:none;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer" onclick="deleteRequest('+r.id+')">Delete Request</button>':'';
     return '<div class="row-card">'+
       '<div class="row-main" onclick="toggleRow('+r.id+')">'+
@@ -405,7 +426,7 @@ function renderRequests() {
           '<div class="detail-full"><label>Title of QT/KA/Educational Post</label><p>'+linkify(r.title||'--')+'</p></div>'+
           '<div class="detail-full"><label>Reason for Change</label><p>'+linkify(r.reason||'--')+'</p></div>'+
           '<div class="detail-full"><label>Additional Information</label><p>'+linkify(r.additionalInfo||'--')+'</p></div>'+
-        '</div>'+deleteBtn+
+        '</div>'+jiraBtn+deleteBtn+
       '</div>'+
     '</div>';
   }).join('');
@@ -526,6 +547,111 @@ function refreshTracker(){
 function showToast(msg){
   var t=document.getElementById('refreshToast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+var JIRA_TOKEN = 'ATATT3xFfGF0xLXqBXbqiVkjjvjpBmqHoFtoRBp6IRmutyjcLNUpZvTtABZPSewPUpWJDdVe24CI3xuTx6WiWkYaQhLi2t239uF4EzbGvSq3WmZctDio8wQLP-amY6ZZCCvTUfZX3CEL2bnrpzByBXDVOBstpgp_aVmykagg3xLjDDrP-vCMdWI=39D977E1';
+var JIRA_EMAIL = 'festeves@squareup.com';
+var JIRA_BASE = 'https://block.atlassian.net';
+var JIRA_SD_ID = '59';
+var JIRA_RT_ID = '3155';
+
+function getContentTypeId(types) {
+  var t = String(types||'');
+  if (t.includes('Quick Text')) return '17530';
+  if (t.includes('Knowledge Article')) return '17528';
+  if (t.includes('Help Center')) return '17527';
+  if (t.includes('Media')) return '17529';
+  if (t.includes('Automation')) return '29296';
+  return '17528';
+}
+
+function getReasonId(newOrChange) {
+  if (newOrChange === 'New Submission') return '17511';
+  return '17509';
+}
+
+function openJira(id) {
+  var r = requests.find(function(x){return x.id===id;});
+  if (!r) return;
+  var contentType = getContentTypeId(r.submissionType);
+  var contentTypeLabel = {'17530':'Quick Text','17528':'Knowledge Article','17527':'Help Center','17529':'Media','29296':'Automation'}[contentType]||'Knowledge Article';
+  var reasonId = getReasonId(r.newOrChange);
+  var reasonLabel = reasonId==='17511'?'New Content':'Update Incorrect or outdated information';
+  var desc = 'Submitted by: '+r.name+' ('+r.email+')\nDate: '+formatDateTime(r.timestamp)+'\nType: '+r.submissionType+'\nNew/Change: '+r.newOrChange+'\n\nReason for Change:\n'+r.reason;
+  if (r.additionalInfo) desc += '\n\nAdditional Information:\n'+r.additionalInfo;
+  var body = document.getElementById('jiraModalBody');
+  var footer = document.getElementById('jiraModalFooter');
+  body.innerHTML =
+    '<p style="color:#888;font-size:13px;margin-bottom:16px">Review the Jira ticket details below. Click "Create Jira Ticket" to file automatically.</p>'+
+    '<ul class="jira-confirm-list">'+
+      '<li class="jira-field-row"><div class="jira-field-label">Subject</div><div class="jira-field-value">'+r.title+'</div></li>'+
+      '<li class="jira-field-row"><div class="jira-field-label">Content Type</div><div class="jira-field-value">'+contentTypeLabel+'</div></li>'+
+      '<li class="jira-field-row"><div class="jira-field-label">Abstraction</div><div class="jira-field-value">Bitcoin</div></li>'+
+      '<li class="jira-field-row"><div class="jira-field-label">Sub-Abstraction</div><div class="jira-field-value">Bitcoin</div></li>'+
+      '<li class="jira-field-row"><div class="jira-field-label">Request Reason</div><div class="jira-field-value">'+reasonLabel+'</div></li>'+
+      '<li class="jira-field-row"><div class="jira-field-label">Description</div><div class="jira-field-value" style="white-space:pre-wrap">'+desc+'</div></li>'+
+      '<li class="jira-field-row"><div class="jira-field-label">Relevant Links</div><div class="jira-field-value">'+(r.additionalInfo||'--')+'</div></li>'+
+    '</ul>';
+  footer.innerHTML = '<button class="btn-cancel" onclick="closeJira()">Cancel</button><button class="btn-jira" onclick="createJiraTicket('+id+')">Create Jira Ticket</button>';
+  document.getElementById('jiraOverlay').classList.add('active');
+}
+
+function closeJira() { document.getElementById('jiraOverlay').classList.remove('active'); }
+document.getElementById('jiraOverlay').addEventListener('click',function(e){if(e.target===this)closeJira();});
+
+function createJiraTicket(id) {
+  var r = requests.find(function(x){return x.id===id;});
+  if (!r) return;
+  var desc = 'Submitted by: '+r.name+' ('+r.email+')\nDate: '+formatDateTime(r.timestamp)+'\nType: '+r.submissionType+'\nNew/Change: '+r.newOrChange+'\n\nReason for Change:\n'+r.reason;
+  if (r.additionalInfo) desc += '\n\nAdditional Information:\n'+r.additionalInfo;
+  var payload = {
+    serviceDeskId: JIRA_SD_ID,
+    requestTypeId: JIRA_RT_ID,
+    requestFieldValues: {
+      summary: r.title,
+      description: desc,
+      customfield_11544: {value: getContentTypeId(r.submissionType)},
+      customfield_14814: {value: '31191'},
+      customfield_11933: {value: '47514'},
+      customfield_11527: {value: getReasonId(r.newOrChange)}
+    }
+  };
+  if (r.additionalInfo) payload.requestFieldValues.customfield_14524 = r.additionalInfo;
+  var footer = document.getElementById('jiraModalFooter');
+  footer.innerHTML = '<p style="color:#888">Creating Jira ticket...</p>';
+  fetch(JIRA_BASE+'/rest/servicedeskapi/request', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Basic '+btoa(JIRA_EMAIL+':'+JIRA_TOKEN),
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(function(resp){return resp.json();})
+  .then(function(data){
+    if(data.issueKey){
+      var jiraUrl = JIRA_BASE+'/browse/'+data.issueKey;
+      r.jiraUrl = jiraUrl;
+      r.jiraKey = data.issueKey;
+      if(r.status==='New') r.status='In Review';
+      saveRequestsBin(function(){
+        renderRequests();
+        var body = document.getElementById('jiraModalBody');
+        body.innerHTML = '<div style="text-align:center;padding:20px"><div style="font-size:48px;margin-bottom:12px">&#10003;</div><h3 style="margin-bottom:8px">Jira Ticket Created!</h3><p style="margin-bottom:16px"><span class="jira-status">'+data.issueKey+'</span></p><a href="'+jiraUrl+'" target="_blank" rel="noopener" style="color:#0052CC;font-weight:600;font-size:14px">Open in Jira</a></div>';
+        footer.innerHTML = '<button class="btn-cancel" onclick="closeJira()">Close</button>';
+        showToast('Done: Jira ticket '+data.issueKey+' created!');
+      });
+    } else {
+      var errMsg = data.errorMessage || (data.errors ? JSON.stringify(data.errors) : 'Unknown error');
+      footer.innerHTML = '<p style="color:#dc2626;font-size:13px">Error: '+errMsg+'</p><button class="btn-cancel" onclick="closeJira()" style="margin-top:8px">Close</button>';
+      showToast('Warning: Failed to create Jira ticket');
+    }
+  })
+  .catch(function(err){
+    footer.innerHTML = '<p style="color:#dc2626;font-size:13px">Error: '+err.message+'</p><button class="btn-cancel" onclick="closeJira()" style="margin-top:8px">Close</button>';
+    showToast('Warning: Failed to create Jira ticket');
+  });
 }
 
 function switchTab(tab) {
