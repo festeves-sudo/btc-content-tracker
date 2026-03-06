@@ -121,6 +121,39 @@ header h1 span{color:#F7931A}
 .loading-state{text-align:center;padding:60px 20px;color:#999}
 .loading-spinner{display:inline-block;width:36px;height:36px;border:4px solid #e0e0e0;border-top-color:#F7931A;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px}
 .hidden{display:none!important}
+.tab-bar{background:#fff;padding:0 32px;border-bottom:1px solid #e0e0e0;display:flex;gap:0}
+.tab-btn{padding:14px 24px;font-size:14px;font-weight:600;color:#888;background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:color .2s,border-color .2s}
+.tab-btn.active{color:#F7931A;border-bottom-color:#F7931A}
+.tab-btn:hover{color:#333}
+.analytics-wrap{padding:24px 32px;display:none}
+.analytics-wrap.active{display:block}
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stat-card .stat-num{font-size:32px;font-weight:800;color:#1a1a2e}
+.stat-card .stat-label{font-size:13px;color:#888;margin-top:4px;font-weight:500}
+.stat-card.orange .stat-num{color:#F7931A}
+.stat-card.blue .stat-num{color:#1d4ed8}
+.stat-card.purple .stat-num{color:#7c3aed}
+.stat-card.green .stat-num{color:#047857}
+.chart-section{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px}
+.chart-section h3{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:16px}
+.chart-row{display:flex;align-items:center;margin-bottom:10px;gap:12px}
+.chart-label{width:160px;font-size:13px;font-weight:500;color:#555;text-align:right;flex-shrink:0}
+.chart-bar-wrap{flex:1;background:#f0f2f5;border-radius:8px;height:28px;overflow:hidden;position:relative}
+.chart-bar{height:100%;border-radius:8px;transition:width .6s ease;display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;color:#fff;min-width:0}
+.chart-bar.orange{background:#F7931A}
+.chart-bar.blue{background:#1d4ed8}
+.chart-bar.purple{background:#7c3aed}
+.chart-bar.green{background:#047857}
+.chart-bar.red{background:#dc2626}
+.chart-bar.amber{background:#b45309}
+.chart-count{font-size:13px;font-weight:600;color:#555;width:36px;text-align:right;flex-shrink:0}
+.top-submitters{list-style:none;padding:0}
+.top-submitters li{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fafafa;border-radius:8px;margin-bottom:6px;font-size:14px}
+.top-submitters .rank{font-weight:700;color:#F7931A;margin-right:10px}
+.top-submitters .sub-count{font-weight:600;color:#555}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){.stat-cards{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.chart-label{width:100px}}
 @media(max-width:768px){.table-header{display:none}.row-main{grid-template-columns:1fr;gap:6px}.detail-grid{grid-template-columns:1fr}.filters{flex-direction:column}.filters input{width:100%}.form-row{grid-template-columns:1fr}}
 </style>
 </head>
@@ -158,7 +191,12 @@ header h1 span{color:#F7931A}
 <div><label class="filter-label">Status:</label><select id="filterStatus" onchange="renderRequests()"><option value="all">All</option><option value="New">New</option><option value="In Review">In Review</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option><option value="Rejected">Rejected</option></select></div>
 <div><label class="filter-label">Sort:</label><select id="sortBy" onchange="renderRequests()"><option value="date-desc">Newest First</option><option value="date-asc">Oldest First</option></select></div>
 </div>
-<div class="table-wrap">
+<div class="tab-bar">
+<button class="tab-btn active" onclick="switchTab('requests')">Requests</button>
+<button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+</div>
+<div class="analytics-wrap" id="analyticsTab"></div>
+<div class="table-wrap" id="requestsTab">
 <div class="table-header"><div>#</div><div>Requester</div><div>Date</div><div>Submission Type</div><div>Status</div><div></div></div>
 <div id="requestList"><div class="loading-state"><div class="loading-spinner"></div><p>Loading submissions...</p></div></div>
 </div>
@@ -488,6 +526,84 @@ function refreshTracker(){
 function showToast(msg){
   var t=document.getElementById('refreshToast');t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+function switchTab(tab) {
+  var btns = document.querySelectorAll('.tab-btn');
+  btns[0].className = 'tab-btn' + (tab==='requests' ? ' active' : '');
+  btns[1].className = 'tab-btn' + (tab==='analytics' ? ' active' : '');
+  document.getElementById('requestsTab').style.display = tab==='requests' ? 'block' : 'none';
+  document.getElementById('analyticsTab').style.display = tab==='analytics' ? 'block' : 'none';
+  document.getElementById('analyticsTab').className = 'analytics-wrap' + (tab==='analytics' ? ' active' : '');
+  if (tab==='analytics') renderAnalytics();
+}
+
+function makeBar(label, count, max, colorClass) {
+  var pct = max > 0 ? Math.round((count/max)*100) : 0;
+  var barW = max > 0 ? Math.max(pct, 2) : 0;
+  return '<div class="chart-row"><div class="chart-label">'+label+'</div><div class="chart-bar-wrap"><div class="chart-bar '+colorClass+'" style="width:'+barW+'%"></div></div><div class="chart-count">'+count+'</div></div>';
+}
+
+function renderAnalytics() {
+  var el = document.getElementById('analyticsTab');
+  var total = requests.length;
+  if (total === 0) { el.innerHTML = '<div class="empty-state"><div class="icon">&#9993;</div><p>No data yet. Submit some requests to see analytics.</p></div>'; return; }
+  var sNew=0,sReview=0,sProgress=0,sCompleted=0,sRejected=0;
+  var tQT=0,tKA=0,tEP=0;
+  var nNew=0,nChange=0;
+  var submitters={};
+  requests.forEach(function(r){
+    var st=r.status||'New';
+    if(st==='New')sNew++;
+    else if(st==='In Review')sReview++;
+    else if(st==='In Progress')sProgress++;
+    else if(st==='Completed')sCompleted++;
+    else if(st==='Rejected')sRejected++;
+    var types=String(r.submissionType||'');
+    if(types.includes('Quick Text'))tQT++;
+    if(types.includes('Knowledge Article'))tKA++;
+    if(types.includes('Educational Post'))tEP++;
+    if(r.newOrChange==='New Submission')nNew++;
+    else if(r.newOrChange==='Change to Existing Content')nChange++;
+    var email=String(r.email||'unknown').toLowerCase();
+    submitters[email]=(submitters[email]||0)+1;
+  });
+  var maxType=Math.max(tQT,tKA,tEP,1);
+  var maxNC=Math.max(nNew,nChange,1);
+  var maxStatus=Math.max(sNew,sReview,sProgress,sCompleted,sRejected,1);
+  var sorted=Object.keys(submitters).sort(function(a,b){return submitters[b]-submitters[a];}).slice(0,10);
+  var topHtml=sorted.map(function(email,i){
+    var name=email.split('@')[0].split('.').map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+    return '<li><div><span class="rank">#'+(i+1)+'</span>'+name+' <span style="color:#aaa;font-size:12px">('+email+')</span></div><div class="sub-count">'+submitters[email]+' request'+(submitters[email]!==1?'s':'')+'</div></li>';
+  }).join('');
+  el.innerHTML=
+    '<div class="stat-cards">'+
+      '<div class="stat-card orange"><div class="stat-num">'+total+'</div><div class="stat-label">Total Requests</div></div>'+
+      '<div class="stat-card blue"><div class="stat-num">'+sNew+'</div><div class="stat-label">New / Pending</div></div>'+
+      '<div class="stat-card purple"><div class="stat-num">'+(sReview+sProgress)+'</div><div class="stat-label">In Progress</div></div>'+
+      '<div class="stat-card green"><div class="stat-num">'+sCompleted+'</div><div class="stat-label">Completed</div></div>'+
+    '</div>'+
+    '<div class="charts-grid">'+
+      '<div class="chart-section"><h3>Submission Types</h3>'+
+        makeBar('Quick Text',tQT,maxType,'blue')+
+        makeBar('Knowledge Article',tKA,maxType,'purple')+
+        makeBar('Educational Post',tEP,maxType,'green')+
+      '</div>'+
+      '<div class="chart-section"><h3>New vs Change</h3>'+
+        makeBar('New Submission',nNew,maxNC,'blue')+
+        makeBar('Change to Existing',nChange,maxNC,'amber')+
+      '</div>'+
+    '</div>'+
+    '<div class="chart-section"><h3>Status Breakdown</h3>'+
+      makeBar('New',sNew,maxStatus,'blue')+
+      makeBar('In Review',sReview,maxStatus,'amber')+
+      makeBar('In Progress',sProgress,maxStatus,'purple')+
+      makeBar('Completed',sCompleted,maxStatus,'green')+
+      makeBar('Rejected',sRejected,maxStatus,'red')+
+    '</div>'+
+    '<div class="chart-section"><h3>Top Submitters</h3>'+
+      (topHtml?'<ul class="top-submitters">'+topHtml+'</ul>':'<p style="color:#888">No submitters yet.</p>')+
+    '</div>';
 }
 
 checkSession();
