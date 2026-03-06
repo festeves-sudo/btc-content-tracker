@@ -725,7 +725,8 @@ function createJiraTicket(id) {
     headers: {
       'Authorization': 'Basic '+btoa(JIRA_EMAIL+':'+JIRA_TOKEN),
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'X-Atlassian-Token': 'no-check'
     },
     body: JSON.stringify(payload)
   })
